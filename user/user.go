@@ -10,5 +10,5 @@ type Store interface {
 	Update(*model.User) error
 	//AddFollower(user *model.User, followerID uint) error
 	//RemoveFollower(user *model.User, followerID uint) error
-	//IsFollower(userID, followerID uint) (bool, error)
+	IsFollower(userID, followerID uint) (bool, error)
 }

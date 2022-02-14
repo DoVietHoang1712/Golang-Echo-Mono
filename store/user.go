@@ -46,3 +46,11 @@ func (us *UserStore) Create(user *model.User) error {
 func (us *UserStore) Update(user *model.User) error {
 	return us.db.Model(user).Updates(user).Error
 }
+
+func (us *UserStore) IsFollower(userID, followerID uint) (bool, error) {
+	var f model.Follow
+	if err := us.db.Where("following_id = ? AND follower_id = ?", userID, followerID).Find(&f).Error; err != nil {
+		return false, err
+	}
+	return true, nil
+}
