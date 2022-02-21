@@ -1,9 +1,10 @@
 package handler
 
 import (
+	"golang-sql/model"
+
 	"github.com/gosimple/slug"
 	"github.com/labstack/echo/v4"
-	"golang-sql/model"
 )
 
 type UserUpdateRequest struct {
@@ -57,7 +58,7 @@ type UserRegisterRequest struct {
 		Username string `json:"username" validate:"required"`
 		Password string `json:"password" validate:"required"`
 		Email    string `json:"email" validate:"required,email"`
-	}
+	} `json:"user"`
 }
 
 func (r *UserRegisterRequest) bind(c echo.Context, u *model.User) error {
