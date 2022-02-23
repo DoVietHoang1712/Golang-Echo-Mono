@@ -95,3 +95,187 @@ func (as *ArticleStore) UpdateArticle(a *model.Article, tagList []string) error 
 func (as *ArticleStore) DeleteArticle(a *model.Article) error {
 	return as.db.Delete(a).Error
 }
+
+func (as *ArticleStore) List(offset, limit int) ([]model.Article, int64, error) {
+	var (
+		articles []model.Article
+		count    int64
+	)
+
+	as.db.Model(&articles).Count(&count)
+	as.db.Preload("favourites").Preload("Tags").Preload("Author").Offset(offset).Limit(limit).Order("created_at desc").Find(&articles)
+	return articles, count, nil
+}
+
+func (as *ArticleStore) ListByTag(tag string, offset, limit int) ([]model.Article, int64, error) {
+	var (
+		t        model.Tag
+		articles []model.Article
+		count    int64
+	)
+
+	err := as.db.Where(&model.Tag{Tag: tag}).First(&t).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	as.db.Model(&t).
+		Preload("Favorites").
+		Preload("Tags").
+		Preload("Author").
+		Offset(offset).
+		Limit(limit).
+		Order("created_at desc").
+		Association("Articles").
+		Find(&articles)
+
+	count = as.db.Model(&t).Association("Articles").Count()
+
+	return articles, count, nil
+}
+
+func (as *ArticleStore) ListByAuthor(username string, offset, limit int) ([]model.Article, int64, error) {
+	var (
+		u        model.User
+		articles []model.Article
+		count    int64
+	)
+
+	err := as.db.Where(&model.User{Username: username}).First(&u).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	as.db.Where(&model.Article{AuthorID: u.ID}).
+		Preload("Favorites").
+		Preload("Tags").
+		Preload("Author").
+		Offset(offset).
+		Limit(limit).
+		Order("created_at desc").
+		Find(&articles)
+	as.db.Where(&model.Article{AuthorID: u.ID}).Model(&model.Article{}).Count(&count)
+
+	return articles, count, nil
+}
+
+func (as *ArticleStore) ListByWhoFavorited(username string, offset, limit int) ([]model.Article, int64, error) {
+	var (
+		u        model.User
+		articles []model.Article
+		count    int64
+	)
+
+	err := as.db.Where(&model.User{Username: username}).First(&u).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	as.db.Model(&u).
+		Preload("Favorites").
+		Preload("Tags").
+		Preload("Author").
+		Offset(offset).
+		Limit(limit).
+		Order("created_at desc").
+		Association("Favorites").
+		Find(&articles)
+
+	count = as.db.Model(&u).Association("Favorites").Count()
+
+	return articles, count, nil
+}
+
+func (as *ArticleStore) ListFeed(userID uint, offset, limit int) ([]model.Article, int64, error) {
+	var (
+		u        model.User
+		articles []model.Article
+		count    int64
+	)
+
+	err := as.db.First(&u, userID).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	var followings []model.Follow
+
+	as.db.Model(&u).Preload("Following").Preload("Follower").Association("Followings").Find(&followings)
+
+	if len(followings) == 0 {
+		return articles, 0, nil
+	}
+
+	ids := make([]uint, len(followings))
+	for i, f := range followings {
+		ids[i] = f.FollowingID
+	}
+
+	as.db.Where("author_id in (?)", ids).
+		Preload("Favorites").
+		Preload("Tags").
+		Preload("Author").
+		Offset(offset).
+		Limit(limit).
+		Order("created_at desc").
+		Find(&articles)
+	as.db.Where(&model.Article{AuthorID: u.ID}).Model(&model.Article{}).Count(&count)
+
+	return articles, count, nil
+}
+
+func (as *ArticleStore) AddComment(a *model.Article, c *model.Comment) error {
+	err := as.db.Model(a).Association("Comments").Append(c)
+	if err != nil {
+		return err
+	}
+
+	return as.db.Where(c.ID).Preload("User").First(c).Error
+}
+
+func (as *ArticleStore) GetCommentsBySlug(slug string) ([]model.Comment, error) {
+	var m model.Article
+	err := as.db.Where(&model.Article{Slug: slug}).Preload("Comments").Preload("Comments.User").First(&m).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return m.Comments, nil
+}
+
+func (as *ArticleStore) GetCommentByID(id uint) (*model.Comment, error) {
+	var m model.Comment
+	if err := as.db.Where(id).First(&m).Error; err != nil {
+		return nil, err
+	}
+
+	return &m, nil
+}
+
+func (as *ArticleStore) DeleteComment(c *model.Comment) error {
+	return as.db.Delete(c).Error
+}
+
+func (as *ArticleStore) AddFavorite(a *model.Article, userID uint) error {
+	usr := model.User{}
+	usr.ID = userID
+
+	return as.db.Model(a).Association("Favorites").Append(&usr)
+}
+
+func (as *ArticleStore) RemoveFavorite(a *model.Article, userID uint) error {
+	usr := model.User{}
+	usr.ID = userID
+
+	return as.db.Model(a).Association("Favorites").Delete(&usr)
+}
+
+func (as *ArticleStore) ListTags() ([]model.Tag, error) {
+	var tags []model.Tag
+	if err := as.db.Find(&tags).Error; err != nil {
+		return nil, err
+	}
+
+	return tags, nil
+}

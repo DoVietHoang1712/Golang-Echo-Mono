@@ -54,3 +54,24 @@ func (us *UserStore) IsFollower(userID, followerID uint) (bool, error) {
 	}
 	return true, nil
 }
+
+func (us *UserStore) AddFollower(user *model.User, followerID uint) error {
+	return us.db.Model(user).Association("Follower").Append(&model.Follow{
+		FollowerID:  followerID,
+		FollowingID: user.ID,
+	})
+}
+
+func (us *UserStore) RemoveFollower(user *model.User, followerID uint) error {
+	f := model.Follow{
+		FollowerID:  followerID,
+		FollowingID: user.ID,
+	}
+	if err := us.db.Model(user).Association("Follower").Find(&f); err != nil {
+		return err
+	}
+	if err := us.db.Delete(f).Error; err != nil {
+		return err
+	}
+	return nil
+}

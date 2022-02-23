@@ -70,7 +70,7 @@ type SingleArticleResponse struct {
 
 type ArticleListResponse struct {
 	Articles      []*ArticleResponse `json:"articles"`
-	ArticlesCount int                `json:"articlesCount"`
+	ArticlesCount int64              `json:"articlesCount"`
 }
 
 func newArticleResponse(c echo.Context, a *model.Article) *SingleArticleResponse {
@@ -98,7 +98,7 @@ func newArticleResponse(c echo.Context, a *model.Article) *SingleArticleResponse
 	return &SingleArticleResponse{ar}
 }
 
-func newArticleListResponse(us user.Store, userID uint, articles []model.Article, count int) *ArticleListResponse {
+func newArticleListResponse(us user.Store, userID uint, articles []model.Article, count int64) *ArticleListResponse {
 	r := new(ArticleListResponse)
 	r.Articles = make([]*ArticleResponse, 0)
 	for _, a := range articles {

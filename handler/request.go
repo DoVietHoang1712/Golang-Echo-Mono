@@ -158,14 +158,14 @@ type CreateCommentRequest struct {
 	} `json:"comment"`
 }
 
-//func (r *CreateCommentRequest) bind(c echo.Context, cm *model.Comment) error {
-//	if err := c.Bind(r); err != nil {
-//		return err
-//	}
-//	if err := c.Validate(r); err != nil {
-//		return err
-//	}
-//	cm.Body = r.Comment.Body
-//	cm.UserID = userIDFromToken(c)
-//	return nil
-//}
+func (r *CreateCommentRequest) bind(c echo.Context, cm *model.Comment) error {
+	if err := c.Bind(r); err != nil {
+		return err
+	}
+	if err := c.Validate(r); err != nil {
+		return err
+	}
+	cm.Body = r.Comment.Body
+	cm.UserID = userIDFromToken(c)
+	return nil
+}

@@ -8,7 +8,7 @@ type Store interface {
 	GetByUsername(string) (*model.User, error)
 	Create(*model.User) error
 	Update(*model.User) error
-	//AddFollower(user *model.User, followerID uint) error
-	//RemoveFollower(user *model.User, followerID uint) error
+	AddFollower(user *model.User, followerID uint) error
+	RemoveFollower(user *model.User, followerID uint) error
 	IsFollower(userID, followerID uint) (bool, error)
 }

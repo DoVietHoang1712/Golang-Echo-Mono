@@ -82,3 +82,47 @@ func (h *Handler) UpdateUser(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, newUserResponse(u))
 }
+
+func (h *Handler) GetProfile(c echo.Context) error {
+	username := c.Param("username")
+	u, err := h.userStore.GetByUsername(username)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, utils.NewError(err))
+	}
+	if u == nil {
+		return c.JSON(http.StatusNotFound, utils.NotFound())
+	}
+	return c.JSON(http.StatusOK, newProfileResponse(h.userStore, userIDFromToken(c), u))
+}
+
+func (h *Handler) Follow(c echo.Context) error {
+	followerID := userIDFromToken(c)
+	username := c.Param("username")
+	u, err := h.userStore.GetByUsername(username)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, utils.NewError(err))
+	}
+	if u == nil {
+		return c.JSON(http.StatusNotFound, utils.NotFound())
+	}
+	if err := h.userStore.AddFollower(u, followerID); err != nil {
+		return c.JSON(http.StatusUnprocessableEntity, utils.NewError(err))
+	}
+	return c.JSON(http.StatusOK, newProfileResponse(h.userStore, userIDFromToken(c), u))
+}
+
+func (h *Handler) Unfollow(c echo.Context) error {
+	followerID := userIDFromToken(c)
+	username := c.Param("username")
+	u, err := h.userStore.GetByUsername(username)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, utils.NewError(err))
+	}
+	if u == nil {
+		return c.JSON(http.StatusNotFound, utils.NotFound())
+	}
+	if err := h.userStore.RemoveFollower(u, followerID); err != nil {
+		return c.JSON(http.StatusUnprocessableEntity, utils.NewError(err))
+	}
+	return c.JSON(http.StatusOK, newProfileResponse(h.userStore, userIDFromToken(c), u))
+}

@@ -29,7 +29,7 @@ func JWT(key interface{}) echo.MiddlewareFunc {
 }
 
 func JWTWithConfig(config JWTConfig) echo.MiddlewareFunc {
-	extractor := jwtFromHeader("Authorization", "Token")
+	extractor := jwtFromHeader("Authorization", "Bearer")
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			auth, err := extractor(c)
@@ -65,7 +65,9 @@ func jwtFromHeader(header string, authScheme string) jwtExtractor {
 	return func(c echo.Context) (string, error) {
 		auth := c.Request().Header.Get(header)
 		l := len(authScheme)
+		fmt.Println(auth)
 		if len(auth) > l+1 && auth[:l] == authScheme {
+			fmt.Println(auth[l+1:])
 			return auth[l+1:], nil
 		}
 		return "", ErrJWTMissing
